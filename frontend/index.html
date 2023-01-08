@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+
+<html>
+<link href="recogito.min.css" rel="stylesheet">
+<script src="recogito.min.js"></script>
+
+<style>
+    .open {
+        background-color: rgba(212, 106, 106, 0.2);
+        border-bottom: 2px solid #ec7474;
+    }
+
+    .closed {
+        background-color: rgba(85, 170, 85, 0.2);
+        border-bottom: 2px solid #73b273;
+    }
+</style>
+
+<body>
+    <pre style="margin-left: 20px;" id="draft-ietf-mls-protocol-17">{DOCUMENT}</pre>
+</body>
+
+<script type="text/javascript">
+    (function () {
+        var formatter = function (annotation) {
+            if (annotation.underlying.meta == "Open") {
+                return "open";
+            } else if (annotation.underlying.meta == "Closed") {
+                return "closed";
+            } else {
+                return "";
+            }
+        }
+
+        var r = Recogito.init({
+            content: document.getElementById('draft-ietf-mls-protocol-17'),
+            mode: "pre",
+            allowEmpty: true,
+            editorAutoPosition: true,
+            formatter: formatter,
+        });
+
+        r.loadAnnotations("/annotations");
+
+        r.on('createAnnotation', annotation => {
+            fetch("/annotation", {
+                method: "POST",
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(annotation),
+            })
+                .then(res => {
+                    if (res.status != 201) {
+                        alert("Creation of annotation failed.")
+                    }
+                });
+        });
+
+        r.on('updateAnnotation', annotation => {
+            fetch("/annotation", {
+                method: "POST",
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(annotation),
+            })
+                .then(res => {
+                    if (res.status != 202) {
+                        alert("Update of annotation failed.")
+                    }
+                });
+        });
+
+        r.on('deleteAnnotation', annotation => {
+            fetch("/annotation", {
+                method: "DELETE",
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(annotation),
+            })
+                .then(res => {
+                    if (res.status != 200) {
+                        alert("Deletion of annotation failed. Try to delete the issue on GitHub.");
+                    }
+                });
+        });
+    })();
+</script>
+
+</html>
