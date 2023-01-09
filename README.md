@@ -2,6 +2,10 @@
 
 The tool at hand provides an interface that allows to create text annotations on a plaintext document that are synced through GitHub issues.
 
+## Example
+
+![image](https://user-images.githubusercontent.com/8997731/211362554-41bcd634-cf07-4163-bd6e-d6e34b08deac.png)
+
 # Setup
 
 First, you need to create a `pat.txt` in the root of the repository.
