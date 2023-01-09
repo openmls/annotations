@@ -23,10 +23,10 @@ async fn main() {
 
     let app = Router::new()
         .route("/", get(index))
-        .route("/recogito.min.css", get(css))
-        .route("/recogito.min.css.map", get(css_map))
-        .route("/recogito.min.js", get(js))
-        .route("/recogito.min.js.map", get(js_map))
+        .route("/recogito/recogito.min.css", get(css))
+        .route("/recogito/recogito.min.css.map", get(css_map))
+        .route("/recogito/recogito.min.js", get(js))
+        .route("/recogito/recogito.min.js.map", get(js_map))
         .route("/favicon.ico", get(favicon))
         .route("/annotations", get(get_annotations))
         .route("/annotation", post(post_annotation))
@@ -57,28 +57,28 @@ async fn index() -> impl IntoResponse {
 async fn css() -> impl IntoResponse {
     Response::builder()
         .header("Content-Type", "text/css")
-        .body(std::fs::read_to_string("frontend/recogito.min.css").unwrap())
+        .body(std::fs::read_to_string("frontend/recogito/recogito.min.css").unwrap())
         .unwrap()
 }
 
 async fn css_map() -> impl IntoResponse {
     Response::builder()
         .header("Content-Type", "application/json")
-        .body(std::fs::read_to_string("frontend/recogito.min.css.map").unwrap())
+        .body(std::fs::read_to_string("frontend/recogito/recogito.min.css.map").unwrap())
         .unwrap()
 }
 
 async fn js() -> impl IntoResponse {
     Response::builder()
         .header("Content-Type", "text/javascript")
-        .body(std::fs::read_to_string("frontend/recogito.min.js").unwrap())
+        .body(std::fs::read_to_string("frontend/recogito/recogito.min.js").unwrap())
         .unwrap()
 }
 
 async fn js_map() -> impl IntoResponse {
     Response::builder()
         .header("Content-Type", "application/json")
-        .body(std::fs::read_to_string("frontend/recogito.min.js.map").unwrap())
+        .body(std::fs::read_to_string("frontend/recogito/recogito.min.js.map").unwrap())
         .unwrap()
 }
 
@@ -99,7 +99,7 @@ async fn get_annotations() -> impl IntoResponse {
     let mut annotations = Vec::new();
 
     let mut page = octocrab
-        .issues("duesee", "mls-validation")
+        .issues("openmls", "annotations")
         .list()
         .labels(&[String::from("validation")])
         .state(params::State::All)
@@ -148,7 +148,7 @@ async fn post_annotation(Json(annotation): Json<Annotation>) -> impl IntoRespons
 
     if let Some(issue_number) = find_issue(&annotation).await {
         match octocrab
-            .issues("duesee", "mls-validation")
+            .issues("openmls", "annotations")
             .update(issue_number)
             .title(&format!("[Validation] {}", annotation.title()))
             .body(&body)
@@ -160,7 +160,7 @@ async fn post_annotation(Json(annotation): Json<Annotation>) -> impl IntoRespons
         }
     } else {
         match octocrab
-            .issues("duesee", "mls-validation")
+            .issues("openmls", "annotations")
             .create(format!("[Validation] {}", annotation.title()))
             .labels(Some(vec!["validation".to_string()]))
             .body(body)
@@ -181,7 +181,7 @@ async fn find_issue(annotation: &Annotation) -> Option<u64> {
     let octocrab = octocrab::instance();
 
     let mut page = octocrab
-        .issues("duesee", "mls-validation")
+        .issues("openmls", "annotations")
         .list()
         .labels(&[String::from("validation")])
         .state(params::State::All)
