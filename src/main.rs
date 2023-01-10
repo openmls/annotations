@@ -176,7 +176,7 @@ async fn post_annotation(
         }
     } else {
         let body = format!(
-            "> {}\r\n\r\n\r\n---\r\n<details><summary>Annotation</summary>\r\n\r\n```annotation\r\n{}\r\n```\r\n</details>",
+            "{}\r\n\r\n---\r\n\r\n<details><summary>Annotation</summary>\r\n\r\n```annotation\r\n{}\r\n```\r\n</details>",
             annotation
                 .text_quote_selector()
                 .unwrap_or("```\r\n<no quote>\r\n```".into()),
