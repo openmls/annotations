@@ -8,9 +8,11 @@ The tool at hand provides an interface that allows to create text annotations on
 
 # Setup
 
-First, you need to create a `pat.txt` in the root of the repository.
-This file must contain a (fine-grained) [Personal Access Token (PAT)] with the capability to manage issues on the repository you intend to sync this tool with.
-We recommend that you give this token the least possible privileges, i.e., to manage issues in a single repository.
+1) Adjust the `config.ron` as needed.
+2) Create a (fine-grained) [Personal Access Token (PAT)] with the capability to manage issues on the repository you intend to sync this tool with.
+(We recommend that you give this token the least possible privileges, i.e., to manage issues in a single repository.)
+Create a file containing your newly created personal access token and reference the file in the `config.ron`.
+3) Make sure to not push your token accidentally! We recommend to use `pat.txt` in the repository root to store the token because this file is listed in `.gitignore`.
 
 Then, execute ...
 
