@@ -101,7 +101,7 @@ impl Annotation {
             Selector::TextQuoteSelector { exact } => {
                 let quote: String = exact
                     .lines()
-                    .map(|line| format!("    {}\r\n", line.trim()))
+                    .map(|line| format!("> {}\r\n", line.trim()))
                     .collect();
                 Some(quote.trim().to_string())
             }
