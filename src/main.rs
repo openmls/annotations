@@ -8,7 +8,11 @@ use axum::{
     routing::{delete, get, post},
     Json, Router,
 };
-use octocrab::{models, models::IssueState, params};
+use octocrab::{
+    models,
+    models::{issues::Issue, IssueState},
+    params,
+};
 
 #[tokio::main(flavor = "current_thread")]
 async fn main() {
@@ -121,7 +125,7 @@ async fn get_annotations(State(state): State<ServerState>) -> impl IntoResponse 
     loop {
         for issue in &page {
             if let Some(body) = &issue.body {
-                if let Some(Ok(mut annotation)) = extract_annotation(body) {
+                if let Some((_, Ok(mut annotation), _)) = extract_annotation(body) {
                     if issue.state == IssueState::Open {
                         annotation.meta = Some(GitHubStatus::Open);
                     } else {
@@ -151,18 +155,17 @@ async fn post_annotation(
 ) -> impl IntoResponse {
     let octocrab = octocrab::instance();
 
-    let body = format!(
-        "> {}\r\n\r\n\r\n---\r\n<details><summary>Annotation</summary>\r\n\r\n```annotation\r\n{}\r\n```\r\n</details>",
-        annotation
-            .text_quote_selector()
-            .unwrap_or("```\r\n<no quote>\r\n```".into()),
-        serde_json::to_string_pretty(&annotation).unwrap()
-    );
+    if let Some((issue, (prefix, _, suffix))) = find_issue(&state, &annotation).await {
+        let body = format!(
+            "{}```annotation\r\n{}\r\n```{}",
+            prefix,
+            serde_json::to_string_pretty(&annotation).unwrap(),
+            suffix,
+        );
 
-    if let Some(issue_number) = find_issue(&state, &annotation).await {
         match octocrab
             .issues(state.config.owner, state.config.repo)
-            .update(issue_number)
+            .update(issue.number)
             .title(&format!("[Validation] {}", annotation.title()))
             .body(&body)
             .send()
@@ -172,6 +175,14 @@ async fn post_annotation(
             Err(_) => StatusCode::NOT_ACCEPTABLE,
         }
     } else {
+        let body = format!(
+            "> {}\r\n\r\n\r\n---\r\n<details><summary>Annotation</summary>\r\n\r\n```annotation\r\n{}\r\n```\r\n</details>",
+            annotation
+                .text_quote_selector()
+                .unwrap_or("```\r\n<no quote>\r\n```".into()),
+            serde_json::to_string_pretty(&annotation).unwrap()
+        );
+
         match octocrab
             .issues(state.config.owner, state.config.repo)
             .create(format!("[Validation] {}", annotation.title()))
@@ -190,7 +201,10 @@ async fn delete_annotation() -> impl IntoResponse {
     StatusCode::NOT_IMPLEMENTED
 }
 
-async fn find_issue(state: &ServerState, annotation: &Annotation) -> Option<u64> {
+async fn find_issue(
+    state: &ServerState,
+    annotation: &Annotation,
+) -> Option<(Issue, (String, Annotation, String))> {
     let octocrab = octocrab::instance();
 
     let mut page = octocrab
@@ -206,18 +220,17 @@ async fn find_issue(state: &ServerState, annotation: &Annotation) -> Option<u64>
     loop {
         for issue in &page {
             if let Some(body) = &issue.body {
-                if let Some(Ok(issue_annotation)) = extract_annotation(body) {
+                if let Some((prefix, Ok(issue_annotation), suffix)) = extract_annotation(body) {
                     if issue_annotation.id == annotation.id {
-                        return Some(issue.number);
+                        return Some((
+                            issue.clone(),
+                            (prefix.to_string(), issue_annotation, suffix.to_string()),
+                        ));
                     }
                 }
             }
         }
-        page = match octocrab
-            .get_page::<models::issues::Issue>(&page.next)
-            .await
-            .unwrap()
-        {
+        page = match octocrab.get_page::<Issue>(&page.next).await.unwrap() {
             Some(next_page) => next_page,
             None => break,
         }

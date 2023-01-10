@@ -112,10 +112,11 @@ impl Annotation {
 
 // -------------------------------------------------------------------------------------------------
 
-pub fn extract_annotation(text: &str) -> Option<serde_json::Result<Annotation>> {
-    if let Some((_, right)) = text.split_once("```annotation\r\n") {
-        if let Some((left, _)) = right.split_once("\r\n```") {
-            return Some(serde_json::from_str(left));
+// Return a (prefix, Annotation, suffix) tuple.
+pub fn extract_annotation(text: &str) -> Option<(&str, serde_json::Result<Annotation>, &str)> {
+    if let Some((prefix, remaining)) = text.split_once("```annotation\r\n") {
+        if let Some((annotation, suffix)) = remaining.split_once("\r\n```") {
+            return Some((prefix, serde_json::from_str(annotation), suffix));
         }
     }
 
