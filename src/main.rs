@@ -1,7 +1,8 @@
 use std::net::SocketAddr;
 
-use annotations::{extract_annotation, Annotation, GitHubStatus};
+use annotations::{extract_annotation, Annotation, Config, GitHubStatus, ServerState};
 use axum::{
+    extract::State,
     http::{HeaderValue, StatusCode},
     response::{IntoResponse, Response},
     routing::{delete, get, post},
@@ -11,11 +12,19 @@ use octocrab::{models, models::IssueState, params};
 
 #[tokio::main(flavor = "current_thread")]
 async fn main() {
+    let config: Config = {
+        let config_data = std::fs::read_to_string("config.ron").unwrap();
+
+        ron::from_str(&config_data).unwrap()
+    };
+
     // Read Personal Access Token (PAT)
-    let pat = std::fs::read_to_string("pat.txt")
+    let pat = std::fs::read_to_string(&config.pat)
         .unwrap()
         .trim()
         .to_string();
+
+    let state = ServerState { config };
 
     octocrab::initialise(octocrab::Octocrab::builder().personal_token(pat.into())).unwrap();
 
@@ -30,20 +39,21 @@ async fn main() {
         .route("/favicon.ico", get(favicon))
         .route("/annotations", get(get_annotations))
         .route("/annotation", post(post_annotation))
-        .route("/annotation", delete(delete_annotation));
+        .route("/annotation", delete(delete_annotation))
+        .with_state(state);
 
     let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
-    tracing::debug!("listening on {}", addr);
+    println!("Please head over to http://{}", addr);
     axum::Server::bind(&addr)
         .serve(app.into_make_service())
         .await
         .unwrap();
 }
 
-async fn index() -> impl IntoResponse {
+async fn index(State(state): State<ServerState>) -> impl IntoResponse {
     let page = {
         let index = std::fs::read_to_string("frontend/index.html").unwrap();
-        let document = std::fs::read_to_string("assets/draft-ietf-mls-protocol-17.txt").unwrap();
+        let document = std::fs::read_to_string(&state.config.document).unwrap();
 
         index.replace("{DOCUMENT}", &document)
     };
@@ -93,13 +103,13 @@ async fn favicon() -> impl IntoResponse {
     (StatusCode::OK, response)
 }
 
-async fn get_annotations() -> impl IntoResponse {
+async fn get_annotations(State(state): State<ServerState>) -> impl IntoResponse {
     let octocrab = octocrab::instance();
 
     let mut annotations = Vec::new();
 
     let mut page = octocrab
-        .issues("openmls", "annotations")
+        .issues(state.config.owner, state.config.repo)
         .list()
         .labels(&[String::from("validation")])
         .state(params::State::All)
@@ -135,7 +145,10 @@ async fn get_annotations() -> impl IntoResponse {
     (StatusCode::CREATED, Json(annotations))
 }
 
-async fn post_annotation(Json(annotation): Json<Annotation>) -> impl IntoResponse {
+async fn post_annotation(
+    State(state): State<ServerState>,
+    Json(annotation): Json<Annotation>,
+) -> impl IntoResponse {
     let octocrab = octocrab::instance();
 
     let body = format!(
@@ -146,9 +159,9 @@ async fn post_annotation(Json(annotation): Json<Annotation>) -> impl IntoRespons
         serde_json::to_string_pretty(&annotation).unwrap()
     );
 
-    if let Some(issue_number) = find_issue(&annotation).await {
+    if let Some(issue_number) = find_issue(&state, &annotation).await {
         match octocrab
-            .issues("openmls", "annotations")
+            .issues(state.config.owner, state.config.repo)
             .update(issue_number)
             .title(&format!("[Validation] {}", annotation.title()))
             .body(&body)
@@ -160,7 +173,7 @@ async fn post_annotation(Json(annotation): Json<Annotation>) -> impl IntoRespons
         }
     } else {
         match octocrab
-            .issues("openmls", "annotations")
+            .issues(state.config.owner, state.config.repo)
             .create(format!("[Validation] {}", annotation.title()))
             .labels(Some(vec!["validation".to_string()]))
             .body(body)
@@ -177,11 +190,11 @@ async fn delete_annotation() -> impl IntoResponse {
     StatusCode::NOT_IMPLEMENTED
 }
 
-async fn find_issue(annotation: &Annotation) -> Option<u64> {
+async fn find_issue(state: &ServerState, annotation: &Annotation) -> Option<u64> {
     let octocrab = octocrab::instance();
 
     let mut page = octocrab
-        .issues("openmls", "annotations")
+        .issues(&state.config.owner, &state.config.repo)
         .list()
         .labels(&[String::from("validation")])
         .state(params::State::All)

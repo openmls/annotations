@@ -1,0 +1,15 @@
+// This configuration targets the ...
+//   https://github.com/openmls/annotations
+// ... repository and the ...
+//   draft-ietf-mls-protocol-17.txt
+// ... document.
+(
+    // Owner, i.e., user or organisation, of the repository.
+    owner: "openmls",
+    // Repository name.
+    repo: "annotations",
+    // Path to file with Personal Access Token (PAT).
+    pat: "pat.txt",
+    // Path to the to-be-annotated document.
+    document: "assets/draft-ietf-mls-protocol-17.txt",
+)

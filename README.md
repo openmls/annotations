@@ -12,8 +12,6 @@ First, you need to create a `pat.txt` in the root of the repository.
 This file must contain a (fine-grained) [Personal Access Token (PAT)] with the capability to manage issues on the repository you intend to sync this tool with.
 We recommend that you give this token the least possible privileges, i.e., to manage issues in a single repository.
 
-(Note, the repository as well as the document are currently hard-coded to `openmls/annotations` and `draft-ietf-mls-protocol-17.txt` -- will fix later.)
-
 Then, execute ...
 
 ```sh

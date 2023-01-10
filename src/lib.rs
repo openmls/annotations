@@ -1,5 +1,20 @@
 use serde::{Deserialize, Serialize};
 
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct Config {
+    pub owner: String,
+    pub repo: String,
+    pub pat: String,
+    pub document: String,
+}
+
+#[derive(Clone, Debug)]
+pub struct ServerState {
+    pub config: Config,
+}
+
+// -------------------------------------------------------------------------------------------------
+
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Annotation {
     #[serde(rename = "@context")]
