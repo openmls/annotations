@@ -4,8 +4,14 @@ use serde::{Deserialize, Serialize};
 pub struct Config {
     pub owner: String,
     pub repo: String,
-    pub pat: String,
+    pub mode: Mode,
     pub document: String,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub enum Mode {
+    ReadOnly,
+    ReadWrite(String),
 }
 
 #[derive(Clone, Debug)]

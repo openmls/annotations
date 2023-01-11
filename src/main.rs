@@ -1,6 +1,6 @@
 use std::net::SocketAddr;
 
-use annotations::{extract_annotation, Annotation, Config, GitHubStatus, ServerState};
+use annotations::{extract_annotation, Annotation, Config, GitHubStatus, Mode, ServerState};
 use axum::{
     extract::State,
     http::{HeaderValue, StatusCode},
@@ -22,20 +22,25 @@ async fn main() {
         ron::from_str(&config_data).unwrap()
     };
 
-    // Read Personal Access Token (PAT)
-    let pat = std::fs::read_to_string(&config.pat)
-        .unwrap()
-        .trim()
-        .to_string();
+    match &config.mode {
+        Mode::ReadOnly => {
+            octocrab::initialise(octocrab::Octocrab::builder()).unwrap();
+        }
+        Mode::ReadWrite(pat) => {
+            // Read Personal Access Token (PAT)
+            let pat = std::fs::read_to_string(pat).unwrap().trim().to_string();
+
+            octocrab::initialise(octocrab::Octocrab::builder().personal_token(pat.into())).unwrap();
+        }
+    }
 
     let state = ServerState { config };
-
-    octocrab::initialise(octocrab::Octocrab::builder().personal_token(pat.into())).unwrap();
 
     tracing_subscriber::fmt::init();
 
     let app = Router::new()
         .route("/", get(index))
+        .route("/mode", get(get_mode))
         .route("/recogito/recogito.min.css", get(css))
         .route("/recogito/recogito.min.css.map", get(css_map))
         .route("/recogito/recogito.min.js", get(js))
@@ -105,6 +110,18 @@ async fn favicon() -> impl IntoResponse {
         .insert("Content-Type", HeaderValue::from_static("image/x-icon"));
 
     (StatusCode::OK, response)
+}
+
+async fn get_mode(State(state): State<ServerState>) -> impl IntoResponse {
+    let data = match state.config.mode {
+        Mode::ReadOnly => "{ \"readOnly\": true }",
+        Mode::ReadWrite(_) => "{ \"readOnly\": false }",
+    };
+
+    Response::builder()
+        .header("Content-Type", "application/json")
+        .body(data.to_string())
+        .unwrap()
 }
 
 async fn get_annotations(State(state): State<ServerState>) -> impl IntoResponse {
