@@ -29,6 +29,7 @@ pub struct Annotation {
     pub body: Vec<Body>,
     pub target: Target,
     pub id: String,
+    /// This is used to tunnel GitHub metadata to RecogitoJS.
     pub meta: Option<GitHubStatus>,
 }
 
@@ -48,12 +49,6 @@ pub struct Target {
 pub enum Selector {
     TextQuoteSelector { exact: String },
     TextPositionSelector { start: usize, end: usize },
-}
-
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
-pub enum GitHubStatus {
-    Open,
-    Closed,
 }
 
 impl Annotation {
@@ -127,4 +122,12 @@ pub fn extract_annotation(text: &str) -> Option<(&str, serde_json::Result<Annota
     }
 
     None
+}
+
+// -------------------------------------------------------------------------------------------------
+
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+pub enum GitHubStatus {
+    Open,
+    Closed,
 }
