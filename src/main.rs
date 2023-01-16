@@ -132,7 +132,7 @@ async fn get_annotations(State(state): State<ServerState>) -> impl IntoResponse 
     let mut page = octocrab
         .issues(state.config.owner, state.config.repo)
         .list()
-        .labels(&[String::from("validation")])
+        .labels(&[String::from("annotation")])
         .state(params::State::All)
         .per_page(50)
         .send()
@@ -183,7 +183,7 @@ async fn post_annotation(
         match octocrab
             .issues(state.config.owner, state.config.repo)
             .update(issue.number)
-            .title(&format!("[Validation] {}", annotation.title()))
+            .title(&format!("[Annotation] {}", annotation.title()))
             .body(&body)
             .send()
             .await
@@ -202,8 +202,8 @@ async fn post_annotation(
 
         match octocrab
             .issues(state.config.owner, state.config.repo)
-            .create(format!("[Validation] {}", annotation.title()))
-            .labels(Some(vec!["validation".to_string()]))
+            .create(format!("[Annotation] {}", annotation.title()))
+            .labels(Some(vec!["annotation".to_string()]))
             .body(body)
             .send()
             .await
@@ -227,7 +227,7 @@ async fn find_issue(
     let mut page = octocrab
         .issues(&state.config.owner, &state.config.repo)
         .list()
-        .labels(&[String::from("validation")])
+        .labels(&[String::from("annotation")])
         .state(params::State::All)
         .per_page(50)
         .send()
