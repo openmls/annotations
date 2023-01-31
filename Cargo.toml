@@ -7,6 +7,7 @@ edition = "2021"
 
 [dependencies]
 axum = "0.6.1"
+html-escape = "0.2.13"
 octocrab = "0.18.1"
 ron = "0.8.0"
 serde = { version = "1.0.152", features = ["serde_derive"] }

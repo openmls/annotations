@@ -62,7 +62,10 @@ async fn main() {
 async fn index(State(state): State<ServerState>) -> impl IntoResponse {
     let page = {
         let index = std::fs::read_to_string("frontend/index.html").unwrap();
-        let document = std::fs::read_to_string(&state.config.document).unwrap();
+        let document = {
+            let tmp = std::fs::read_to_string(&state.config.document).unwrap();
+            html_escape::encode_text(&tmp).to_string()
+        };
 
         index.replace("{DOCUMENT}", &document)
     };
